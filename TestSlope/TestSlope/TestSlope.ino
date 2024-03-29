@@ -91,16 +91,16 @@ void setup() {
 void loop() {
   gyro_signals();
   if (WiFi.status() == WL_CONNECTED) {
-    String postData = "X=" + String(X) + "&Y=" + String(Y) + "&Z=" + String(Z) + "&roll=" + String(AngleRoll) + "&pitch=" + String(AnglePitch);
+    String postData = "X=" + String(AccX) + "&Y=" + String(AccY) + "&Z=" + String(AccZ) + "&roll=" + String(AngleRoll) + "&pitch=" + String(AnglePitch);
     HTTPClient http;
     http.begin(URL);
     http.addHeader("Content-Type", "application/x-www-form-urlencoded");
     int httpCode = http.POST(postData);
     String payload = http.getString();
-    //Serial.print("HTTP Status Code: ");
-    //Serial.println(httpCode);
-    //Serial.print("payload: ");
-    //Serial.println(payload);
+    Serial.print("HTTP Status Code: ");
+    Serial.println(httpCode);
+    Serial.print("payload: ");
+    Serial.println(payload);
   }
   delay(100);
 }
