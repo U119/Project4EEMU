@@ -61,46 +61,21 @@ void setup() {
   Wire.write(0x00);
   Wire.endTransmission();
 
-  Serial.println();
-  Serial.println("-------------");
-  Serial.println("WIFI mode: STA");
-  WiFi.mode(WIFI_STA);
-  Serial.println("-------------");
-
-  Serial.println();
-  Serial.println("------------");
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
-  WiFi.begin(ssid, password);
-
-  int connecting_process_timed_out = 20; // 20 seconds.
-  connecting_process_timed_out = connecting_process_timed_out * 2;
-  while (WiFi.status() != WL_CONNECTED) {
-    Serial.print(".");
-    if (connecting_process_timed_out > 0) connecting_process_timed_out--;
-    if (connecting_process_timed_out == 0) {
-      delay(1000);
-    }
-  }
   
-  Serial.println();
-  Serial.println("WiFi connected");
-  Serial.println("------------");
   delay(2000);
 }
 void loop() {
   gyro_signals();
-  if (WiFi.status() == WL_CONNECTED) {
-    String postData = "X=" + String(X) + "&Y=" + String(Y) + "&Z=" + String(Z) + "&roll=" + String(AngleRoll) + "&pitch=" + String(AnglePitch);
-    HTTPClient http;
-    http.begin(URL);
-    http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-    int httpCode = http.POST(postData);
-    String payload = http.getString();
-    //Serial.print("HTTP Status Code: ");
-    //Serial.println(httpCode);
-    //Serial.print("payload: ");
-    //Serial.println(payload);
-  }
+  Serial.print("AccX = ");
+  Serial.println(AccX);
+  Serial.print("AccY = ");
+  Serial.println(AccY);
+  Serial.print("AccZ = ");
+  Serial.println(AccZ);
+  Serial.print("roll = ");
+  Serial.println(AngleRoll);
+  Serial.print("pitch = ");
+  Serial.println(AnglePitch);
+  
   delay(100);
 }
