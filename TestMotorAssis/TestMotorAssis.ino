@@ -42,16 +42,17 @@ void loop() {
     Serial.println(" seconds");
     Serial.println("-----------------------------------------------");
     timing = false;
-  }
-  if ( time_ori > 1) {
-    // Move forward for 10 seconds
-    ledcWrite(0, motorSpeed);  // Set motor speed using LEDC
-    digitalWrite(LPWM_Output, LOW); // Assuming LOW is forward direction
-    delay(1000);  // 10 seconds delay
+    if ( time_ori > 5) {
+      // Move forward for 5 seconds
+      ledcWrite(0, motorSpeed);  // Set motor speed using LEDC
+      digitalWrite(LPWM_Output, LOW); // Assuming LOW is forward direction
+      delay(5000);  // 5 seconds delay
 
-    // Stop the motor
-    ledcWrite(0, 0); // Set PWM to 0 for stopping
-    delay(1000); // Ensure the motor stops completely before next movement
+      // Stop the motor
+      ledcWrite(0, 0); // Set PWM to 0 for stopping
+      delay(1000); // Ensure the motor stops completely before next movement
+    }
   }
+  lastState = currentState;
   delay(10);
 }
