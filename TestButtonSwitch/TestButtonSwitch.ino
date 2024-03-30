@@ -6,8 +6,6 @@ int motorSpeed = 64; // Set motor speed (assuming 64 is the desired RPM)
 //New
 int i = 0;
 #define BUTTON_PIN 33
-int lastState = HIGH; // the previous state from the input pin
-int currentState;
 
 void setup() {
   Serial.begin(9600);
@@ -26,17 +24,15 @@ void loop() {
   digitalWrite(LPWM_Output, LOW); // Assuming LOW is forward direction
   while (i < 5000) { // Continue loop until i reaches 5000
       delay(1);
-      currentState = digitalRead(BUTTON_PIN);
-      if(lastState == LOW && currentState == HIGH) {
-        Serial.println("The state changed from LOW to HIGH");
-        // save the last state
-        lastState = currentState;
+      int buttonState = digitalRead(BUTTON_PIN);
+      if(buttonState == 0) {
+        Serial.println("stop");
+        break; // Exit the loop
       }
       i++; // Increment i by 1 in each iteration
-  }
-  delay(5000);  // 5 seconds delay
+  }  // 5 seconds delay
 
   // Stop the motor
   ledcWrite(0, 0); // Set PWM to 0 for stopping
-  delay(1000); // Ensure the motor stops completely before next movement
+  delay(10000); // Ensure the motor stops completely before next movement
 }
