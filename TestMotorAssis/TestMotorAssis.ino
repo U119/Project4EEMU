@@ -12,7 +12,7 @@ bool lastState = false;
 int name = 1;
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   pinMode(proxPin, INPUT);
   pinMode(RPWM_Output, OUTPUT);
   pinMode(LPWM_Output, OUTPUT);
