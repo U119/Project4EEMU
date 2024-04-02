@@ -59,10 +59,17 @@ void gyro_signals(void) {
   AnglePitch=-atan(AccX/sqrt(AccY*AccY+AccZ*AccZ))*1/(3.142/180);
 }
 
+void proximitInterrupt() {
+  bool currentState = digitalRead(proxPin);
+  int a;
+  
+}
+
 void setup() {
   Serial.begin(9600);
   // Setup motor
   pinMode(proxPin, INPUT);
+  attachInterrupt(digitalPinToInterrupt(proxPin), proximitInterrupt, CHANGE);
   pinMode(RPWM_Output, OUTPUT);
   pinMode(LPWM_Output, OUTPUT);
 
@@ -104,13 +111,13 @@ void loop() {
     Serial.println(" seconds");
     Serial.println("-----------------------------------------------");
     timing = false;
-    if ( time_ori > 5) {
+    if ( time_ori > 5 && AnglePitch < -10) {
       // Move forward for 5 seconds
       ledcWrite(0, motorSpeed);  // Set motor speed using LEDC
       digitalWrite(LPWM_Output, LOW); // Assuming LOW is forward direction
       while (i < 5000) { // Continue loop until i reaches 50
-        int buttonState = digitalRead(BUTTON_PIN);
-        if(buttonState == 0) {
+        //int buttonState = digitalRead(BUTTON_PIN);
+        if(AngleRoll > 15) {
           break; // Exit the loop
         }
         i++; // Increment i by 1 in each iteration
