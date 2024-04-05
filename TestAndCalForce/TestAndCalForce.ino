@@ -1,12 +1,18 @@
 #include <driver/ledc.h> // Include the LEDC library
 #include <Wire.h>
-//#include "WiFi.h"
-//#include <HTTPClient.h>
 
 int RPWM_Output = 22;
 int LPWM_Output = 23;
 int motorSpeed = 64; // Set motor speed (assuming 64 is the desired RPM)
 
+int proxPin = 34;
+float t_start = 0;
+float t_end = 0;
+bool timing = false;
+bool lastState = false;
+int name = 1;
+bool currentState;
+//set paramrter
 float velocity;
 int i = 0;
 float time_ori = 0;
@@ -18,63 +24,11 @@ float I = 12.9;
 float F, Ph, Pm, rpm;
 float Torque = 253.098;
 
-int proxPin = 34;
-float t_start = 0;
-float t_end = 0;
-bool timing = false;
-bool lastState = false;
-int name = 1;
-bool currentState;
-
-float RateRoll, RatePitch, RateYaw;
-float AccX, AccY, AccZ;
-float AngleRoll, AnglePitch;
-float LoopTimer;
-
-#define BUTTON_PIN 33
-
 const TickType_t xDelay2000ms = pdMS_TO_TICKS(2000);
-TaskHandle_t Task1 = NULL;    
+TaskHandle_t Task1 = NULL;
 TaskHandle_t Task2 = NULL;
 TaskHandle_t Task3 = NULL;
 int passValue = 0;
-
-void gyro_signals(void) {
-  Wire.beginTransmission(0x68);
-  Wire.write(0x1A);
-  Wire.write(0x05);
-  Wire.endTransmission();
-  Wire.beginTransmission(0x68);
-  Wire.write(0x1C);
-  Wire.write(0x10);
-  Wire.endTransmission();
-  Wire.beginTransmission(0x68);
-  Wire.write(0x3B);
-  Wire.endTransmission(); 
-  Wire.requestFrom(0x68,6);
-  int16_t AccXLSB = Wire.read() << 8 | Wire.read();
-  int16_t AccYLSB = Wire.read() << 8 | Wire.read();
-  int16_t AccZLSB = Wire.read() << 8 | Wire.read();
-  Wire.beginTransmission(0x68);
-  Wire.write(0x1B); 
-  Wire.write(0x8);
-  Wire.endTransmission();                                                   
-  Wire.beginTransmission(0x68);
-  Wire.write(0x43);
-  Wire.endTransmission();
-  Wire.requestFrom(0x68,6);
-  int16_t GyroX=Wire.read()<<8 | Wire.read();
-  int16_t GyroY=Wire.read()<<8 | Wire.read();
-  int16_t GyroZ=Wire.read()<<8 | Wire.read();
-  RateRoll=(float)GyroX/65.5;
-  RatePitch=(float)GyroY/65.5;
-  RateYaw=(float)GyroZ/65.5;
-  AccX=(float)AccXLSB/4096 - 0.03;
-  AccY=(float)AccYLSB/4096;
-  AccZ=(float)AccZLSB/4096 - 0.17;
-  AngleRoll=atan(AccY/sqrt(AccX*AccX+AccZ*AccZ))*1/(3.142/180);
-  AnglePitch=-atan(AccX/sqrt(AccY*AccY+AccZ*AccZ))*1/(3.142/180);
-}
 
 void setup() {
   Serial.begin(9600);
@@ -90,18 +44,6 @@ void setup() {
   // Configure LEDC
   ledcSetup(0, 5000, 8); // LEDC channel 0, 5000 Hz frequency, 8-bit resolution
   ledcAttachPin(RPWM_Output, 0); // Attach RPWM_Output to LEDC channel 0
-  // Setup MPU6050
-  pinMode(13, OUTPUT);
-  digitalWrite(13, HIGH);
-  Wire.setClock(400000);
-  Wire.begin();
-  delay(250);
-  Wire.beginTransmission(0x68); 
-  Wire.write(0x6B);
-  Wire.write(0x00);
-  Wire.endTransmission();
-
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
 }
 
 void Proxit_Task(void *pvParam) {
@@ -119,7 +61,7 @@ void Velocity_Task(void *pvParam) {
 }
 
 void loop() {
-  gyro_signals();
+
   if (!timing && lastState == LOW && currentState == HIGH) {
     t_start = millis() / 1000.0;
     timing = true;
@@ -137,14 +79,14 @@ void loop() {
     Serial.println(" seconds");
     Serial.println("-----------------------------------------------");
     timing = false;
-    if ( time_ori > 5 && AngleRoll > -8) {
+    if ( time_ori > 5) {
       // Move forward for 5 seconds
       ledcWrite(0, motorSpeed);  // Set motor speed using LEDC
       digitalWrite(LPWM_Output, LOW); // Assuming LOW is forward direction
       while (i < 60000) { // Continue loop until i reaches 50
         int buttonState = digitalRead(BUTTON_PIN);
-        if(buttonState == 1) {
-          break; // Exit the loop
+        if (buttonState == 0) {
+          break;
         }
         i++; // Increment i by 1 in each iteration
         delay(1);
@@ -156,27 +98,4 @@ void loop() {
   }
   lastState = currentState;
   delay(10);
-
-  //Ramp
-  if (AngleRoll > 8) {
-    delay(1000);
-    if (AngleRoll > 8) {
-      ledcWrite(0, motorSpeed);  // Set motor speed using LEDC
-      digitalWrite(LPWM_Output, LOW); // Assuming LOW is forward direction
-      while (i < 60000) { // Continue loop until i reaches 50
-        int buttonState = digitalRead(BUTTON_PIN);
-        if(buttonState == 1) {
-          break; // Exit the loop
-        }
-        i++; // Increment i by 1 in each iteration
-        delay(1);
-      }
-      ledcWrite(0, 0);
-    }
-  }
-
-  //Accelerate
-  //if(){
-
-  //}
 }
