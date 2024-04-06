@@ -7,6 +7,7 @@ int RPWM_Output = 22;
 int LPWM_Output = 23;
 int motorSpeed = 64; // Set motor speed (assuming 64 is the desired RPM)
 
+// ตัวแปรสำหรับคำนวณหาความเร็ว
 float velocity;
 int i = 0;
 float time_ori = 0;
