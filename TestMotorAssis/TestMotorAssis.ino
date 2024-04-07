@@ -3,6 +3,9 @@
 //#include "WiFi.h"
 //#include <HTTPClient.h>
 
+#define FUNC1_IRAM_ATTR IRAM_ATTR
+#define FUNC2_IRAM_ATTR IRAM_ATTR
+
 int RPWM_Output = 22;
 int LPWM_Output = 23;
 int motorSpeed = 64; // Set motor speed (assuming 64 is the desired RPM)
@@ -39,6 +42,8 @@ TaskHandle_t Task1 = NULL;
 TaskHandle_t Task2 = NULL;
 TaskHandle_t Task3 = NULL;
 int passValue = 0;
+
+bool SwitchState;
 
 void Angle_Task(void *pvParam) {
   while(1){
@@ -83,17 +88,25 @@ void Angle_Task(void *pvParam) {
 void IRAM_ATTR Proxit_Task() {
   while(1) {
     currentState = digitalRead(proxPin);
-    delay(100);
+    vTaskDelay(pdMS_TO_TICKS(100));
+  }
+}
+
+void Switch_Task(void *pvParam) {
+  while(1) {
+    SwitchState = digitalRead(BUTTON_PIN);
+    vTaskDelay(pdMS_TO_TICKS(100));
   }
 }
 
 void setup() {
   Serial.begin(9600);
   delay(1000);
-  //xTaskCreatePinnedToCore(Proxit_Task,"Task1",1000,NULL,1,&Task1,0);
+  xTaskCreatePinnedToCore(Switch_Task,"Task1",1000,NULL,1,&Task1,0);
   xTaskCreatePinnedToCore(Velocity_Task,"Task2",1000,NULL,1,&Task2,0);
   xTaskCreatePinnedToCore(Angle_Task,"Task3",1000,NULL,1,&Task3,0);
   attachInterrupt(digitalPinToInterrupt(proxPin), &Proxit_Task, CHANGE);
+  //attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), &Switch_Task, CHANGE);
   // Setup motor
   pinMode(proxPin, INPUT);
   //attachInterrupt(digitalPinToInterrupt(proxPin), proximitInterrupt, CHANGE);
@@ -124,6 +137,8 @@ void Velocity_Task(void *pvParam) {
     Ph = F * velocity;
     Pm = 0.5 * Ph;
     rpm = (Pm * 9.55) / Torque;
+
+    vTaskDelay(pdMS_TO_TICKS(100));
   }
 }
 
