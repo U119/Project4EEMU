@@ -1,5 +1,6 @@
 #include "WiFi.h"
 #include <HTTPClient.h>
+#include <driver/ledc.h> // Include the LEDC library
 
 // SSID and PASSWORD of your WiFi network
 const char* ssid = "Korn";  // Your WiFi name
@@ -11,11 +12,30 @@ float t_start = 0;
 float t_end = 0;
 bool timing = false;
 bool lastState = false;
-int name = 1;
+int name = 3;
+
+int RPWM_Output = 22;
+int LPWM_Output = 23;
+int motorSpeed = 128; // Set motor speed (assuming 64 is the desired RPM)
+int i = 0;
+
+TaskHandle_t Task1 = NULL;    
+TaskHandle_t Task2 = NULL;
+TaskHandle_t Task3 = NULL;
+TaskHandle_t Task4 = NULL;
+TaskHandle_t Task5 = NULL;
+int passValue = 0;
 
 void setup() {
   Serial.begin(9600);
   pinMode(proxPin, INPUT);
+  pinMode(RPWM_Output, OUTPUT);
+  pinMode(LPWM_Output, OUTPUT);
+
+  // Configure LEDC
+  ledcSetup(0, 5000, 8); // LEDC channel 0, 5000 Hz frequency, 8-bit resolution
+  ledcAttachPin(RPWM_Output, 0); // Attach RPWM_Output to LEDC channel 0
+  xTaskCreatePinnedToCore(Motor_Task,"Task1",1000,NULL,2,&Task1,0);
 
   Serial.println();
   Serial.println("-------------");
@@ -43,6 +63,20 @@ void setup() {
   Serial.println("WiFi connected");
   Serial.println("------------");
   delay(2000);
+}
+
+void Motor_Task(void *pvParam) {
+  while(1){
+    while (i > motorSpeed) {
+      i++;
+      ledcWrite(0, i);  // Set motor speed using LEDC
+      digitalWrite(LPWM_Output, LOW); // Assuming LOW is forward direction
+      vTaskDelay(pdMS_TO_TICKS(40));
+    }
+    vTaskDelay(pdMS_TO_TICKS(55000));
+    ledcWrite(0, 0);
+    vTaskDelay(pdMS_TO_TICKS(60000));
+  }
 }
 
 void loop() {
