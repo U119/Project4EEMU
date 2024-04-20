@@ -1,7 +1,18 @@
 #include <driver/ledc.h> // Include the LEDC library
 #include <Wire.h>
+#include <Arduino.h>
 //#include "WiFi.h"
 //#include <HTTPClient.h>
+
+const unsigned long TIMER_INTERVAL = 500; // 0.5 second
+
+// Timer object
+hw_timer_t *timer = NULL;
+
+// Function prototypes
+void IRAM_ATTR onTimer();
+void setupProximityDetection();
+void proximityDetected();
 
 int RPWM_Output = 22;
 int LPWM_Output = 23;
@@ -53,52 +64,6 @@ int passValue = 0;
 
 bool SwitchState;
 
-void Angle_Task(void *pvParam) {
-  while(1){
-    Wire.beginTransmission(0x68);
-    Wire.write(0x1A);
-    Wire.write(0x05);
-    Wire.endTransmission();
-    Wire.beginTransmission(0x68);
-    Wire.write(0x1C);
-    Wire.write(0x10);
-    Wire.endTransmission();
-    Wire.beginTransmission(0x68);
-    Wire.write(0x3B);
-    Wire.endTransmission(); 
-    Wire.requestFrom(0x68,6);
-    int16_t AccXLSB = Wire.read() << 8 | Wire.read();
-    int16_t AccYLSB = Wire.read() << 8 | Wire.read();
-    int16_t AccZLSB = Wire.read() << 8 | Wire.read();
-    Wire.beginTransmission(0x68);
-    Wire.write(0x1B); 
-    Wire.write(0x8);
-    Wire.endTransmission();                                                   
-    Wire.beginTransmission(0x68);
-    Wire.write(0x43);
-    Wire.endTransmission();
-    Wire.requestFrom(0x68,6);
-    int16_t GyroX=Wire.read()<<8 | Wire.read();
-    int16_t GyroY=Wire.read()<<8 | Wire.read();
-    int16_t GyroZ=Wire.read()<<8 | Wire.read();
-    RateRoll=(float)GyroX/65.5;
-    RatePitch=(float)GyroY/65.5;
-    RateYaw=(float)GyroZ/65.5;
-    AccX=(float)AccXLSB/4096 - 0.03;
-    AccY=(float)AccYLSB/4096;
-    AccZ=(float)AccZLSB/4096 - 0.17;
-    AngleRoll=atan(AccY/sqrt(AccX*AccX+AccZ*AccZ))*1/(3.142/180);
-    AnglePitch=-atan(AccX/sqrt(AccY*AccY+AccZ*AccZ))*1/(3.142/180);
-    //Serial.println(AngleRoll); //หน้าหลัง
-    //Serial.println(AnglePitch); //ซ้ายขวา
-    vTaskDelay(pdMS_TO_TICKS(100));
-  }
-}
-
-void IRAM_ATTR Proxit_Task() {
-  currentState = true;
-}
-
 void Switch_Task(void *pvParam) {
   while(1) {
     /*
@@ -125,8 +90,8 @@ void Start_Task(void *pvParam) {
 
     if (timing && lastState == HIGH && currentState == LOW) {
       time_ori = t_end - t_start;
-      Serial.print("Elapsed time: ");
-      Serial.print(time_ori); // ได้เวลา และระยะห่าง 0.05 m
+      //Serial.print("Elapsed time: ");
+      //Serial.print(time_ori); // ได้เวลา และระยะห่าง 0.05 m
       //Serial.println(" seconds");
       //Serial.println("-----------------------------------------------");
       timing = false;
@@ -134,8 +99,8 @@ void Start_Task(void *pvParam) {
         // Move forward for 5 seconds
         motorSpeed = 64;
 
-        ledcWrite(0, motorSpeed);  // Set motor speed using LEDC
-        digitalWrite(LPWM_Output, LOW); // Assuming LOW is forward direction
+        //ledcWrite(0, motorSpeed);  // Set motor speed using LEDC
+        //digitalWrite(LPWM_Output, LOW); // Assuming LOW is forward direction
         vTaskDelay(pdMS_TO_TICKS(100));
         
         while (i < 30000) { // Continue loop until i reaches 50
@@ -147,7 +112,7 @@ void Start_Task(void *pvParam) {
           vTaskDelay(pdMS_TO_TICKS(1));
         }  // 5 seconds delay
         // Stop the motor
-        ledcWrite(0, 0); // Set PWM to 0 for stopping
+        //ledcWrite(0, 0); // Set PWM to 0 for stopping
         vTaskDelay(pdMS_TO_TICKS(10000)); // Ensure the motor stops completely before next movement
       }
     }
@@ -159,19 +124,19 @@ void Start_Task(void *pvParam) {
 void setup() {
   Serial.begin(9600);
   delay(1000);
-  xTaskCreatePinnedToCore(Switch_Task,"Task1",1000,NULL,3,&Task1,0);
-  xTaskCreatePinnedToCore(Velocity_Task,"Task2",1000,NULL,2,&Task2,0);
-  xTaskCreatePinnedToCore(Angle_Task,"Task3",2000,NULL,1,&Task3,0);
+  xTaskCreatePinnedToCore(Switch_Task,"Task1",1000,NULL,5,&Task1,0);
+  xTaskCreatePinnedToCore(Velocity_Task,"Task2",1000,NULL,3,&Task2,0);
+  //xTaskCreatePinnedToCore(Angle_Task,"Task3",2000,NULL,2,&Task3,0);
   xTaskCreatePinnedToCore(Start_Task,"Task4",2000,NULL,1,&Task4,0);
-  xTaskCreatePinnedToCore(Ramp_Task,"Task5",2000,NULL,1,&Task5,0);
-  xTaskCreatePinnedToCore(inputMag_Task,"Task6",2000,NULL,2,&Task6,0);
-  attachInterrupt(digitalPinToInterrupt(proxPin), &Proxit_Task, CHANGE);
+  //xTaskCreatePinnedToCore(Ramp_Task,"Task5",2000,NULL,0,&Task5,0);
+  //xTaskCreatePinnedToCore(inputMag_Task,"Task6",2000,NULL,4,&Task6,0);
+  //attachInterrupt(digitalPinToInterrupt(proxPin), &Proxit_Task, FALLING);
   //attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), &Switch_Task, CHANGE);
   // Setup motor
-  pinMode(proxPin, INPUT);
+  //pinMode(proxPin, INPUT);
   //attachInterrupt(digitalPinToInterrupt(proxPin), proximitInterrupt, CHANGE);
-  pinMode(RPWM_Output, OUTPUT);
-  pinMode(LPWM_Output, OUTPUT);
+  //pinMode(RPWM_Output, OUTPUT);
+  //pinMode(LPWM_Output, OUTPUT);
 
   // Configure LEDC
   ledcSetup(0, 5000, 8); // LEDC channel 0, 5000 Hz frequency, 8-bit resolution
@@ -188,6 +153,14 @@ void setup() {
   Wire.endTransmission();
 
   pinMode(BUTTON_PIN, INPUT_PULLUP);
+
+  setupProximityDetection();
+
+  // Start the timer
+  timer = timerBegin(0, 80, true); // Timer 0, prescaler 80, count up
+  timerAttachInterrupt(timer, &onTimer, true); // Attach the timer interrupt
+  timerAlarmWrite(timer, TIMER_INTERVAL * 1000, true); // Set the alarm interval in microseconds
+  timerAlarmEnable(timer); // Enable the timer alarm
 }
 
 void Velocity_Task(void *pvParam) {
@@ -203,51 +176,27 @@ void Velocity_Task(void *pvParam) {
   }
 }
 
-void Ramp_Task(void *pvParam) {
-  while (1) {
-    if (AngleRoll > 8 && velocity != 0) {
-      vTaskDelay(pdMS_TO_TICKS(1000));
-      if (AngleRoll > 8 && velocity != 0) {
-        //ledcWrite(0, motorSpeed);  // Set motor speed using LEDC
-        //digitalWrite(LPWM_Output, LOW); // Assuming LOW is forward direction
-        while (i < 60000) { // Continue loop until i reaches 50
-          int buttonState = digitalRead(BUTTON_PIN);
-          if(buttonState == 1) {
-            break; // Exit the loop
-          }
-          i++; // Increment i by 1 in each iteration
-          vTaskDelay(pdMS_TO_TICKS(1));
-        }
-        ledcWrite(0, 0);
-      }
-    }
-  }
+
+// Timer interrupt handler
+void IRAM_ATTR onTimer() {
+  // Call function to check proximity
+  proximityDetected();
+  delay(500);
 }
 
-void inputMag_Task(void *pvParam) {
-  while(1) {
-    vTaskDelay(pdMS_TO_TICKS(100));
-    if (currentState) {
-      //Serial.println(currentState);
-      currentState = false;
-      vTaskDelay(pdMS_TO_TICKS(200));
-    } else {
-      //Serial.println(currentState);
-      currentState = false;
-      vTaskDelay(pdMS_TO_TICKS(200));
-    }
-    vTaskDelay(pdMS_TO_TICKS(100));
-  }
+// Function to check proximity
+void proximityDetected() {
+  // Perform proximity detection here
+  bool currentState = digitalRead(proxPin);
+  Serial.println(currentState);
+  delay(500);
 }
 
-void Acc_Task(void *pvParam) {
-  while(1) {
-    CurrentAccX = AccX;
-    if(CurrentAccX - LastAccX > 1.5*LastAccX) {
-      //ledcWrite(0, motorSpeed);  // Set motor speed using LEDC
-      //digitalWrite(LPWM_Output, LOW); // Assuming LOW is forward direction
-    }
-  }
+// Function to set up proximity detection (replace with actual setup code)
+void setupProximityDetection() {
+  pinMode(proxPin, INPUT);
+  // Set up proximity sensor pins, interrupts, etc.
+  // This function should contain the necessary code to initialize proximity detection
 }
 
 void loop() {

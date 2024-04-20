@@ -50,7 +50,7 @@ void gyro_signals(void) {
   AnglePitch=-atan(AccX/sqrt(AccY*AccY+AccZ*AccZ))*1/(3.142/180);
 }
 void setup() {
-  Serial.begin(57600);
+  Serial.begin(9600);
   pinMode(13, OUTPUT);
   digitalWrite(13, HIGH);
   Wire.setClock(400000);
@@ -66,16 +66,11 @@ void setup() {
 }
 void loop() {
   gyro_signals();
-  Serial.print("AccX = ");
-  Serial.println(AccX);
-  Serial.print("AccY = ");
-  Serial.println(AccY);
-  Serial.print("AccZ = ");
-  Serial.println(AccZ);
+  
   Serial.print("roll = ");
   Serial.println(AngleRoll);
   Serial.print("pitch = ");
   Serial.println(AnglePitch);
   
-  delay(100);
+  delay(1000);
 }
